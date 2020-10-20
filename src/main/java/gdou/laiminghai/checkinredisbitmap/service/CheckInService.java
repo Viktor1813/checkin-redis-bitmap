@@ -19,6 +19,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+/**
+ * @author viktor
+ */
 @Service
 @Slf4j
 public class CheckInService {
@@ -39,8 +42,11 @@ public class CheckInService {
      */
     public void checkIn(Long userId) {
         String today = LocalDate.now().format(DATE_TIME_FORMATTER);
-        if(isCheckIn(userId, today))
+        //查看用户是否签到
+        if(isCheckIn(userId, today)) {
             return;
+        }
+
         stringRedisTemplate.opsForValue().setBit(getCheckInKey(today), userId, true);
         updateContinuousCheckIn(userId);
     }
@@ -88,13 +94,14 @@ public class CheckInService {
         LocalDate endLocalDate = LocalDate.parse(endDate, DATE_TIME_FORMATTER);
         AtomicLong count = new AtomicLong(0);
         long distance = Period.between(startLocalDate, endLocalDate).get(ChronoUnit.DAYS);
-        if(distance < 0)
+        if(distance < 0) {
             return count.get();
+        }
         Stream.iterate(startLocalDate, d -> d.plusDays(1)).limit(distance + 1).forEach((LocalDate date) -> {
-            Boolean isCheckIn = stringRedisTemplate.opsForValue().
-                    getBit(getCheckInKey(date.format(DATE_TIME_FORMATTER)), userId);
-            if(isCheckIn)
+            Boolean isCheckIn = stringRedisTemplate.opsForValue().getBit(getCheckInKey(date.format(DATE_TIME_FORMATTER)), userId);
+            if(isCheckIn) {
                 count.incrementAndGet();
+            }
         });
         return count.get();
     }
